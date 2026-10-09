@@ -51,7 +51,7 @@ All from [Google Fonts](https://fonts.google.com/), under the SIL Open Font Lice
 
 ## Libraries in `libs/`
 
-All are vendored, so games load them with a plain script tag and need no internet for code. `README.md` has the file names.
+All are vendored, so games load them with a plain script tag and need no internet for code. `CLAUDE.md` has the file names.
 
 | Library | Use it for | Use something else when |
 |---|---|---|

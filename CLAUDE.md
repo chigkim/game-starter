@@ -11,7 +11,7 @@ Include sound effects, animation and visual feedback for every action.
 This folder starts as a copy of the `game-starter` template. Before the first commit:
 
 1. Run `git remote -v`. If `origin` points to `github.com/chigkim/game-starter`, the parent does not own it, so never push there. Remove that remote with `git remote remove origin`.
-2. Ask the parent whether they want their own GitHub repo so the games can be played online (recommended), or want to keep everything on this computer. If they want a repo, create it with `gh repo create <name> --public --source . --remote origin` after they confirm the name, then follow "Play on an iPad" in `README.md` to turn on GitHub Pages. If `gh` is missing or not logged in, walk them through installing it and running `gh auth login`.
+2. Ask the parent whether they want their own GitHub repo so the games can be played online (recommended), or want to keep everything on this computer. If they want a repo, create it with `gh repo create <name> --public --source . --remote origin` after they confirm the name, then follow "Putting the games online" below. If `gh` is missing or not logged in, walk them through installing it and running `gh auth login`.
 3. Change the title on `index.html` if the parent wants, for example "Maya's Games".
 
 ## Libraries
@@ -26,6 +26,25 @@ You may use the vendored libraries in `libs/`. Load them with a relative script 
 6. lz-string for compressing saved data.
 7. EasySpeech for reliable text-to-speech that works around browser bugs in the built-in voices.
 8. `speech.js` for a shared narrator voice built on EasySpeech, with mute, stop and a voice picker. Load `easy-speech-2.4.0.js` before it. Never call `speechSynthesis` directly.
+
+| File | Purpose |
+|------|---------|
+| `phaser-4.2.1.min.js` | Canvas game engine (rendering, input, physics) |
+| `tone-15.1.22.js` | Synthesized music and sound effects |
+| `zzfx-1.4.0.micro.min.js` | Tiny arcade-style sound effects. Its `zzfx` is a top-level `let`, so it is a global but not on `window` |
+| `nipplejs-1.0.4.min.js` | On-screen joystick for touch controls |
+| `lz-string-1.5.0.min.js` | Compresses saved data |
+| `gsap-3.15.0.min.js` | Smooth animation of SVG and HTML (GreenSock's free Standard license, see `gsap-3.15.0-LICENSE.md`) |
+| `gsap-3.15.0-MorphSVGPlugin.min.js` | Reshapes one SVG path into another, such as a bud opening |
+| `gsap-3.15.0-MotionPathPlugin.min.js` | Moves things along a curved SVG path |
+| `gsap-3.15.0-Physics2DPlugin.min.js` | Thrown, falling and bouncing pieces such as confetti |
+| `gsap-3.15.0-CustomEase.min.js` | Hand-made easing curves. Load it before `CustomBounce` and `CustomWiggle` |
+| `gsap-3.15.0-CustomBounce.min.js` | Bounces with matching squash and stretch. Needs `CustomEase` |
+| `gsap-3.15.0-CustomWiggle.min.js` | Wobbles and shakes. Needs `CustomEase` |
+| `easy-speech-2.4.0.js` | Fixes browser bugs in the built-in text-to-speech voices |
+| `speech.js` | Shared narrator voice. Load `easy-speech-2.4.0.js` first, then call `Speech.speak(text)`, `Speech.speak(text, { after: true })` (waits for the line being said to finish), `Speech.stop()` and `Speech.setMuted(on)`. It reads math symbols as words and skips emoji. `Speech.setup({ sample, words })` sets what the picker says and extra word swaps. `Speech.openPicker()` opens a voice and speed picker; the choice is saved in localStorage (`narratorVoice`) and shared by every game. A button with class `speech-voice-btn` gets the picker button's look |
+
+When you add a library, add its license file next to it, add a row here and in `docs/free-assets.md`, and add a load check to `tests/libs.spec.js`.
 
 For when to use each library, plus free ready-made art, icons, fonts and animated emoji with their licenses, see `docs/free-assets.md`. Prefer packs that need no credit (CC0, MIT, Apache 2.0). Keep a pack's license file next to its art.
 
@@ -76,13 +95,58 @@ Children must never lose progress when a game updates. A save from any earlier v
 
 ## Development
 
-`README.md` covers the libraries, how to run the games locally, how to set up and run the Playwright tests (including the fix for a browser install that freezes), and how to put the games online. Read it before running or testing anything.
-
-When you add or rename a game or a library, update the tables in `README.md`.
+`README.md` is for parents: only the prompt to paste and game ideas. Keep technical details here, not there.
 
 Keep a short `docs/<game>.md` for each game that saves progress or has rules that are easy to break. It holds the save format, the storage keys, the tests, and anything a later update must not change. Read it before changing that game, and keep it up to date.
 
-When you add a game, add it to the `GAMES` list in `tests/games.spec.js` and run the tests. Tests run with speech off.
+When you add a game, add it to the `GAMES` list in `tests/games.spec.js` and run the tests.
+
+### Running locally
+
+There is no build step. Serve the folder with `npx serve .` or `python -m http.server 8080` and open the page. Sound and speech work best from a server, not from a file opened directly.
+
+### Tests
+
+The games are tested with [Playwright](https://playwright.dev) in headless Chromium. The config is `playwright.config.js`.
+
+- `tests/games.spec.js` checks the home page (every card links to a file and has a version and date, games are listed newest first) and runs the same smoke tests on every game in `GAMES`: it loads without errors, starts and plays for a moment, draws on its canvas (Phaser games), and shows the same version as its card.
+- `tests/libs.spec.js` checks that every library loads, and that the narrator's voice choice is saved in localStorage and sets no cookie.
+- Tests always run with speech off. Each test file removes `speechSynthesis` with `context.addInitScript` before the page loads. A new test file must do the same.
+
+Setup needs Node.js 18 or newer and about 550 MB of disk space for the browser:
+
+```sh
+npm install
+npx playwright install chromium
+npx playwright test                     # all tests, headless
+npx playwright test tests/games.spec.js # one file
+```
+
+The config starts `npx serve . -l 8788` on its own, or reuses one already running on port 8788. `node_modules/`, `test-results/` and `playwright-report/` are git-ignored. The browser goes to the Playwright cache (`~/Library/Caches/ms-playwright` on macOS, `~/.cache/ms-playwright` on Linux, `%LOCALAPPDATA%\ms-playwright` on Windows). Don't install anything without telling the parent, and offer to delete `node_modules/` and the browser when they are done.
+
+| Error | Fix |
+|-------|-----|
+| `Cannot find module '@playwright/test'` | Run `npm install`. |
+| `Executable doesn't exist at .../chromium_headless_shell-<rev>/...` | Run `npx playwright install chromium`. |
+| `Error: listen EADDRINUSE :::8788` | Something else is using port 8788. Stop it, or change the port in `playwright.config.js`. |
+| `DeprecationWarning: module.register() is deprecated` | Harmless on new Node versions. |
+
+If `npx playwright install` downloads to 100% and then stops responding, its unzip step is hanging, which has happened on very new Node versions. First try `npm install -D @playwright/test@latest playwright@latest`. If it still hangs, stop the install, delete the half-made `chromium-*`, `chromium_headless_shell-*` and `__dirlock` entries in the cache, and run `npx playwright install --dry-run chromium` to get each browser's install location and download URL. Download each zip, unzip it into its install location, and create empty `INSTALLATION_COMPLETE` and `DEPENDENCIES_VALIDATED` files there so Playwright knows the install is finished.
+
+### Putting the games online
+
+Use GitHub Pages, which is free. The parent needs a GitHub account and the `gh` tool logged in (`gh auth login`); help them with both if needed.
+
+1. Create the repo with `gh repo create <name> --public --source . --remote origin --push`, after the parent confirms the name.
+2. Turn on Pages from the `main` branch root: `gh api -X POST repos/<owner>/<name>/pages -f "source[branch]=main" -f "source[path]=/"`.
+3. After a minute or two, the games are at `https://<owner>.github.io/<name>/`. Open it to check, then give the parent the link.
+
+Tell the parent, in plain words:
+
+- On the iPad, open the link in Safari, tap Share, then "Add to Home Screen". The game opens like an app, and Safari is less likely to clear its saved progress.
+- The Home Screen app and Safari keep separate saves, so pick one and stick with it.
+- Anyone with the link can play. The games collect no data, but don't put the child's full name or photos in them.
+- After an update, the new version can take a few minutes to appear. Closing and reopening the game helps.
 
 ## Architecture
 
