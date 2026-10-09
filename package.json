@@ -1,0 +1,16 @@
+{
+  "name": "game-starter",
+  "version": "1.0.0",
+  "description": "A starting point for parents to make browser games for young children with an AI coding agent",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "serve . -l 8788 --no-clipboard",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "playwright": "^1.63.0",
+    "serve": "^14.2.4"
+  }
+}
