@@ -27,10 +27,6 @@ For your next game or a change, open the agent in the same folder and say what y
 
 The more you say about your child, the better the game fits: their age, whether they can read, what they love right now, and anything to avoid.
 
-## For the AI agent
-
-If a parent sent you this link and asked for a game: clone `https://github.com/chigkim/game-starter` into the current folder (or update it if it is already there), then read `CLAUDE.md` and follow it, starting with "First time in this folder". Ask the parent your questions before building.
-
 ## License
 
 MIT (see `LICENSE`). Each library in `libs/` keeps its own license, in the file next to it.
